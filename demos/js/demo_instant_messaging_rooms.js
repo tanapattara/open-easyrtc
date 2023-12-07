@@ -119,7 +119,7 @@ function addRoom(roomName, parmString, userAdded) {
         console.log("not adding gui for room " + roomName + " because already connected and it's a user action");
     }
     if (userAdded) {
-        console.log("calling joinRoom(" + roomName + ") because it was a user action ");
+        console.log("calling joinRoom(" + roomName + ") because it was a user action ", roomParms);
 
         easyrtc.joinRoom(roomName, roomParms,
                 function() {
