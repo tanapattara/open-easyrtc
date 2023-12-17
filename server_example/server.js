@@ -1,9 +1,11 @@
 // Load required modules
 var http    = require("http");              // http server core module
+const cors = require('cors');
 var express = require("express");           // web framework external module
 var serveStatic = require('serve-static');  // serve static files
 var socketIo = require("socket.io");        // web socket external module
-
+var fs      = require("fs");        // file system core module
+var port = process.env.PORT || 6001;
 // This sample is using the easyrtc from parent folder.
 // To use this server_example folder only without parent folder:
 // 1. you need to replace this "require("../");" by "require("open-easyrtc");"
@@ -16,9 +18,10 @@ process.title = "node-easyrtc";
 
 // Setup and configure Express http server. Expect a subfolder called "static" to be the web root.
 var app = express();
+app.use(cors());
 app.use(serveStatic('static', {'index': ['index.html']}));
 
-// Start Express http server on port 8080
+// Start Express http server on port
 var webServer = http.createServer(app);
 
 // Start Socket.io so it attaches itself to Express server
@@ -28,7 +31,7 @@ var socketServer = socketIo.listen(webServer, {"log level":1});
 /*
 socketServer.origins(function(origin, callback) {
     if (origin && ![
-        'http://localhost:8080',
+        'http://localhost:' + port,
         '*'
     ].includes(origin)) {
         return callback('origin not allowed', false);
@@ -57,8 +60,15 @@ easyrtc.events.on("easyrtcAuth", function(socket, easyrtcid, msg, socketCallback
 
 // To test, lets print the credential to the console for every room join!
 easyrtc.events.on("roomJoin", function(connectionObj, roomName, roomParameter, callback) {
-    console.log("["+connectionObj.getEasyrtcid()+"] Credential retrieved!", connectionObj.getFieldValueSync("credential"));
-    easyrtc.events.defaultListeners.roomJoin(connectionObj, roomName, roomParameter, callback);
+    easyrtc.events.defaultListeners.roomJoin(connectionObj, roomName, roomParameter, function(err, success) {
+        if(err) {
+            callback(err, null);
+            return;
+        }else{
+            console.log("roomJoin " + success);
+            callback(err, success);
+        }
+    });
 });
 
 // Start EasyRTC server
@@ -71,8 +81,23 @@ var rtc = easyrtc.listen(app, socketServer, null, function(err, rtcRef) {
         appObj.events.defaultListeners.roomCreate(appObj, creatorConnectionObj, roomName, roomOptions, callback);
     });
 });
+var chatHistories = require('../lib/easyrtc_default_event_listeners.js');
 
-// Listen on port 8080
-webServer.listen(8080, function () {
-    console.log('listening on http://localhost:8080');
+function getChatHistory(roomName) {
+    var chatHistory = chatHistories.get(roomName);
+    return chatHistory;
+}
+
+app.get('/api/chathistory/:roomName', function(req, res) {
+    var roomName = req.params.roomName;
+    var chatHistory = getChatHistory(roomName);
+    if (chatHistory) {
+        res.json(chatHistory);
+    } else {
+        res.status(404).send('Chat history not found for this ' + roomName + ' room');
+    }
+});
+// Listen on port
+webServer.listen(port, function () {
+    console.log('listening on http://localhost:' + port + '/');
 });

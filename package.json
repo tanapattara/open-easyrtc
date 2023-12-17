@@ -29,6 +29,7 @@
   "dependencies": {
     "async": "^3.2.3",
     "colors": "*",
+    "cors": "^2.8.5",
     "socket.io-client": "^2.4.0",
     "underscore": "^1.13.2",
     "webrtc-adapter": "^8.1.1"
